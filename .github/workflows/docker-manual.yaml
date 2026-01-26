@@ -58,6 +58,3 @@ jobs:
             LDFLAGS=-X 'main.version=${{ env.VERSION }}-${{ env.SHORT_SHA }}'
           tags: |
             ghcr.io/${{ github.repository }}:${{ env.VERSION }}
-          tags: |
-            ghcr.io/${{ github.repository }}:alpine
-            ghcr.io/${{ github.repository }}:${{ env.VERSION }}-alpine
