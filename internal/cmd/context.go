@@ -269,7 +269,7 @@ func isSharedNothingWorker(cmd *cobra.Command, cfg *config.Config) bool {
 
 // NewServer creates and returns a new web UI NewServer.
 // It initializes in-memory caches for DAGs and runstore, and uses them in the client.
-func (c *Context) NewServer(rs *resource.Service) (*frontend.Server, error) {
+func (c *Context) NewServer(rs *resource.Service, opts ...frontend.ServerOption) (*frontend.Server, error) {
 	limits := c.Config.Cache.Limits()
 	dc := fileutil.NewCache[*core.DAG]("dag_definition", limits.DAG.Limit, limits.DAG.TTL)
 	dc.StartEviction(c)
@@ -295,7 +295,7 @@ func (c *Context) NewServer(rs *resource.Service) (*frontend.Server, error) {
 
 	mr := telemetry.NewRegistry(collector)
 
-	return frontend.NewServer(c.Context, c.Config, dr, c.DAGRunStore, c.QueueStore, c.ProcStore, c.DAGRunMgr, cc, c.ServiceRegistry, mr, collector, rs)
+	return frontend.NewServer(c.Context, c.Config, dr, c.DAGRunStore, c.QueueStore, c.ProcStore, c.DAGRunMgr, cc, c.ServiceRegistry, mr, collector, rs, opts...)
 }
 
 // NewCoordinatorClient creates a new coordinator client using the global peer configuration.
@@ -351,6 +351,19 @@ func (c *Context) StringParam(name string) (string, error) {
 	// If it's wrapped in quotes, remove them
 	val = stringutil.RemoveQuotes(val)
 	return val, nil
+}
+
+// getWorkerID retrieves the worker ID from context, defaulting to "local" if not set or on error.
+func getWorkerID(ctx *Context) string {
+	workerID, err := ctx.StringParam("worker-id")
+	if err != nil {
+		logger.Warn(ctx, "Failed to read worker-id flag, defaulting to 'local'", tag.Error(err))
+		return "local"
+	}
+	if workerID == "" {
+		return "local"
+	}
+	return workerID
 }
 
 // dagStoreConfig contains options for creating a DAG store.
